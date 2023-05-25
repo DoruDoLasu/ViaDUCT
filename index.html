@@ -1,0 +1,214 @@
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="height=device-height, width=device-width, initial-scale=1">
+<title>Via[DUCT]</title>
+<style>
+embed {
+
+}
+#logo {
+    color: #ffff00;
+}
+#title {
+    font-size: 18px;
+    font-family: sans-serif;
+    margin: 0;
+}
+#author {
+    font-size: 14px;
+}
+#description {
+    font-size: 13px;
+    display: block;
+    border: solid 2px black;
+}
+video {
+width: 100%;
+max-height: 335px;
+background-color: #000000;
+
+}
+
+</style>
+</head>
+<body style="background-color: #eceed2">
+<div id="thebar" style="background-color: #222222; height: 34px">
+<span id="logo">Via[DUCT]  </span><input id="searchbar" placeholder="Search..." style="width: 50vw"></input>
+<button onclick="dosearch()">Search!</button>
+</div>
+<div id="thevideo" style="background-color: #aaaaaa"></div>
+<div id="therest">
+</div>
+
+
+<script>
+
+var theresponse;
+var theinstance = "https://invidious.fdn.fr";
+
+function dorequeststuff(lareq, laurl, lathing, after){
+  laurl = theinstance+laurl
+  var themsgsa = new XMLHttpRequest();
+  themsgsa.open(lareq, laurl, true);
+
+  themsgsa.onreadystatechange = function(){
+    if (themsgsa.readyState === 4){
+      status = themsgsa.status;
+      resp = themsgsa.responseText;
+      console.log(lareq + ": " + laurl +", got " + themsgsa.status);
+      if (typeof after == "function"){
+        after(status, resp);
+      }
+    }
+  };
+  if (lathing == null){
+    themsgsa.send();
+  }
+  else {
+    themsgsa.send(lathing);
+  }
+}
+
+if (window.location.search.substr(3) != ""){
+    thevideoid = window.location.search.substr(3);
+} else {
+    thevideoid = "xLmBiBGOPJs";
+}
+
+function fetchvid(videoid){
+document.getElementById("thevideo").textContent = '';
+document.getElementById("therest").textContent = '';
+document.getElementById("therest").innerHTML = '<button onclick="dolisten()">LISTEN</button><button onclick="doloop()" id="loopbutton">LOOP</button>';
+aa = document.createElement("a");
+aa.innerText = "Watch on YouTube";
+aa.href = "https://youtube.com/watch?v=" + videoid;
+document.getElementById("therest").appendChild(aa);
+
+dorequeststuff("GET", "/api/v1/videos/" + videoid, null, function(){
+    
+    theparsedjson = JSON.parse(resp);
+    parsevideo();
+
+});
+}
+
+function parsevideo(){
+
+
+
+
+    title = document.createElement("h2");
+    title.innerText = theparsedjson["title"];
+    title.id = "title";
+
+    author = document.createElement("h3");
+    author.innerText = theparsedjson["author"] + "  (" + theparsedjson["subCountText"] + " subs)";
+    author.id = "author";
+
+    description = document.createElement("span");
+    description.innerText = theparsedjson["description"];
+    description.id = "description";
+
+    thisz = new Date(theparsedjson["published"]*1000);
+    thisz = thisz.toDateString()
+    viewcount = document.createElement("span");
+    viewcount.innerText = theparsedjson["viewCount"] + " views, published " + thisz;
+    viewcount.id = "title";
+
+    emb = document.createElement("video");
+    emb.controls = true;
+    emb.preload = "none";
+    emb.id = "thevid";
+    source = document.createElement("source");
+    source.id = "source";
+    source.src = theparsedjson["formatStreams"][1].url;
+    source.type = theparsedjson["formatStreams"][1].type;
+    emb.appendChild(source);
+    document.getElementById("thevideo").appendChild(emb);
+    document.getElementById("thevideo").appendChild(title);
+    document.getElementById("thevideo").appendChild(author);
+    document.getElementById("thevideo").appendChild(viewcount);
+    document.getElementById("thevideo").appendChild(description);
+
+}
+
+function parseaudio(){
+    title = document.createElement("h2");
+    title.innerText = theparsedjson["title"];
+    title.id = "title";
+
+    author = document.createElement("h3");
+    author.innerText = theparsedjson["author"] + "  (" + theparsedjson["subCountText"] + " subscriptions)";
+    author.id = "author";
+
+    description = document.createElement("span");
+    description.innerText = theparsedjson["description"];
+    description.id = "description";
+
+    thisz = new Date(theparsedjson["published"]*1000);
+    thisz = thisz.toDateString()
+    viewcount = document.createElement("span");
+    viewcount.innerText = theparsedjson["viewCount"] + " views, published" + thisz;
+    viewcount.id = "title";
+
+    emb = document.createElement("video");
+    emb.id = "thevid";
+    emb.controls = true;
+    emb.preload = "none";
+    source = document.createElement("source");
+    source.id = "source";
+    source.src = theparsedjson["adaptiveFormats"][1].url;
+    source.type = theparsedjson["adaptiveFormats"][1].type;
+    emb.appendChild(source);
+    document.getElementById("thevideo").appendChild(emb);
+    document.getElementById("thevideo").appendChild(title);
+    document.getElementById("thevideo").appendChild(author);
+    document.getElementById("thevideo").appendChild(viewcount);
+    document.getElementById("thevideo").appendChild(description);
+
+}
+
+function buttonfetch(param) {
+  return function(paran){
+    fetchvid(param);
+    }
+}
+
+function dosearch(){
+rest = document.getElementById("therest")
+document.getElementById("thevideo").textContent = '';
+rest.textContent = '';
+dorequeststuff("GET", "/api/v1/search?q=" + document.getElementById("searchbar").value, null, function(){
+    
+    theparsedjson = JSON.parse(resp);
+    theparsedjson.forEach(function(item){
+    itemp = document.createElement("button");
+    itemp.innerText = '"' +item.title + '"' + "by " + item.author;
+    itemp.onclick = buttonfetch(item.videoId);
+    rest.appendChild(itemp)
+    })});
+}
+
+function dolisten(){
+document.getElementById("thevideo").textContent = '';
+parseaudio();
+}
+
+function doloop(){
+if (document.getElementById("thevid").loop) {
+  document.getElementById("thevid").loop = false;
+  document.getElementById("loopbutton").innerText = "LOOP";
+  } else {
+  document.getElementById("thevid").loop = true;
+  document.getElementById("loopbutton").innerText = "Don't LOOP";
+  }
+
+
+}
+
+fetchvid(thevideoid);
+
+</script>
+</body>
+</html>
